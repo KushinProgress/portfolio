@@ -149,11 +149,17 @@
     return `frames/frame-${String(index + 1).padStart(4, "0")}.webp?${FRAME_CACHE_TAG}`;
   }
 
+  const LOADER_DURATION = 2100; // Increased loading period (1.75x of base ~1200ms)
+  let loadStartTime = 0;
+  let loaderRaf = 0;
+  let displayedProgress = 0;
+
   function loadFrames() {
     let next = 0;
-    const concurrency = 32;
+    const concurrency = 18; // Scaled concurrency by 1.75x factor (32 / 1.75 ≈ 18)
     const hasBitmap = typeof createImageBitmap === "function";
     let failSafeQuick = null;
+    loadStartTime = performance.now();
 
     function loadOne() {
       if (next >= FRAME_COUNT) return;
@@ -192,12 +198,13 @@
       loaded += 1;
       updateLoader();
 
-      // All 496 frames load and decode in ~300ms over local/fast connection.
-      // Unlock when all frames are ready, or trigger fast fallback if partial.
-      if (!finished && loaded >= FRAME_COUNT) {
+      // Check if both frame buffer and 1.75x loading duration are satisfied
+      const elapsed = performance.now() - loadStartTime;
+      if (!finished && loaded >= FRAME_COUNT && elapsed >= LOADER_DURATION) {
         finish();
       } else if (!finished && loaded >= 60 && !failSafeQuick) {
-        failSafeQuick = window.setTimeout(() => finish(), 600);
+        // Quick fallback only triggers if frames stall after satisfying the minimum loader duration
+        failSafeQuick = window.setTimeout(() => finish(), Math.max(LOADER_DURATION + 600, 3000));
       }
 
       loadOne();
@@ -205,23 +212,46 @@
 
     for (let i = 0; i < concurrency; i += 1) loadOne();
 
-    // Failsafe timer so user is never permanently stuck
-    failSafe = window.setTimeout(() => finish(), 4000);
+    // Start RAF ticker for smooth 60fps percentage progression
+    loaderRaf = requestAnimationFrame(tickLoader);
+
+    // Failsafe timer scaled by 1.75x (7000ms)
+    failSafe = window.setTimeout(() => finish(), Math.round(4000 * 1.75));
+  }
+
+  function tickLoader() {
+    if (finished) return;
+    updateLoader();
+    const actualProgress = Math.min(1, loaded / FRAME_COUNT);
+    const timeProgress = Math.min(1, (performance.now() - loadStartTime) / LOADER_DURATION);
+    if (actualProgress >= 1 && timeProgress >= 1) {
+      finish();
+    } else {
+      loaderRaf = requestAnimationFrame(tickLoader);
+    }
   }
 
   function updateLoader() {
-    const p = Math.min(1, loaded / FRAME_COUNT);
-    if (loaderPct) loaderPct.textContent = `${Math.round(p * 100)}%`;
-    if (loaderBar) loaderBar.style.transform = `scaleX(${p})`;
+    if (finished) return;
+    const actualProgress = Math.min(1, loaded / FRAME_COUNT);
+    const timeProgress = Math.min(1, (performance.now() - loadStartTime) / LOADER_DURATION);
+    const p = Math.min(actualProgress, timeProgress);
+    displayedProgress = Math.max(displayedProgress, p);
+
+    if (loaderPct) loaderPct.textContent = `${Math.round(displayedProgress * 100)}%`;
+    if (loaderBar) loaderBar.style.transform = `scaleX(${displayedProgress})`;
     if (loaderStatus) {
-      if (p > 0.4 && p < 1) loaderStatus.textContent = "Buffering showreel";
-      if (p >= 1) loaderStatus.textContent = "Ready";
+      if (displayedProgress < 0.25) loaderStatus.textContent = "Loading frames";
+      else if (displayedProgress < 1) loaderStatus.textContent = "Buffering showreel";
+      else loaderStatus.textContent = "Ready";
     }
   }
 
   function finish() {
     if (finished) return;
     finished = true;
+    cancelAnimationFrame(loaderRaf);
+    if (failSafeQuick) window.clearTimeout(failSafeQuick);
     window.clearTimeout(failSafe);
 
     if (loaderPct) loaderPct.textContent = "100%";
