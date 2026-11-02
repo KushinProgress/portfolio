@@ -44,13 +44,10 @@
   const bgCanvas = document.createElement("canvas");
   const bgCtx = bgCanvas.getContext("2d");
 
-  const soundGate = document.getElementById("soundGate");
-  const btnWithSound = document.getElementById("btnWithSound");
-  const btnWithoutSound = document.getElementById("btnWithoutSound");
-
-  const loaderPct = document.getElementById("soundGatePct") || document.getElementById("loaderPct");
-  const loaderBar = document.getElementById("soundGateBar") || document.getElementById("loaderBar");
-  const loaderStatus = document.getElementById("soundGateStatus") || document.getElementById("loaderStatus");
+  const loader = document.getElementById("loader");
+  const loaderPct = document.getElementById("loaderPct");
+  const loaderBar = document.getElementById("loaderBar");
+  const loaderStatus = document.getElementById("loaderStatus");
 
   const progressBar = document.getElementById("progressBar");
   const frameNow = document.getElementById("frameNow");
@@ -217,61 +214,6 @@
     }
   }
 
-    let hasChosenSound = false;
-  let pendingStart = false;
-
-  function chooseWithSound() {
-    if (hasChosenSound) return;
-    hasChosenSound = true;
-    isSoundEnabled = true;
-
-    if (soundBtn) soundBtn.classList.add("is-active");
-    if (soundLabel) soundLabel.textContent = "Sound ON";
-    if (soundIcon) soundIcon.textContent = "🔊";
-
-    bgAudio.muted = false;
-    bgAudio.play().catch(() => {});
-
-    dismissGateAndStart();
-  }
-
-  function chooseWithoutSound() {
-    if (hasChosenSound) return;
-    hasChosenSound = true;
-    isSoundEnabled = false;
-
-    if (soundBtn) soundBtn.classList.remove("is-active");
-    if (soundLabel) soundLabel.textContent = "Sound";
-    if (soundIcon) soundIcon.textContent = "🔇";
-
-    bgAudio.muted = true;
-    bgAudio.pause();
-
-    dismissGateAndStart();
-  }
-
-  function dismissGateAndStart() {
-    if (soundGate) soundGate.classList.add("is-dismissed");
-    document.body.classList.remove("is-loading");
-    document.body.classList.add("is-ready");
-
-    if (ready) {
-      startIntroNow();
-    } else {
-      pendingStart = true;
-      const lbl1 = btnWithSound ? btnWithSound.querySelector(".btn-sound-label") : null;
-      const lbl2 = btnWithoutSound ? btnWithoutSound.querySelector(".btn-sound-label") : null;
-      if (lbl1 && isSoundEnabled) lbl1.textContent = "Starting...";
-      if (lbl2 && !isSoundEnabled) lbl2.textContent = "Starting...";
-    }
-  }
-
-  function startIntroNow() {
-    if (!isAutoPlaying && !hasNavigated) {
-      startAutoPlay();
-    }
-  }
-
   function finish() {
     if (finished) return;
     finished = true;
@@ -301,13 +243,19 @@
     lastDrawn = Math.round(current);
     updateHud(lastDrawn);
 
+    window.setTimeout(() => {
+      if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+    }, 1000);
+
     ready = true;
     requestAnimationFrame(tick);
 
-    // If the user already made a sound choice before buffer completed, launch now!
-    if (hasChosenSound && pendingStart) {
-      startIntroNow();
-    }
+    // Auto-play intro from the very start to the very end
+    window.setTimeout(() => {
+      if (!isAutoPlaying && !hasNavigated) {
+        startAutoPlay();
+      }
+    }, 350);
   }
 
   /* ------------------------------------------------------------
@@ -654,19 +602,6 @@
   }
 
   function initControls() {
-    if (btnWithSound) {
-      btnWithSound.addEventListener("click", (e) => {
-        e.preventDefault();
-        chooseWithSound();
-      });
-    }
-    if (btnWithoutSound) {
-      btnWithoutSound.addEventListener("click", (e) => {
-        e.preventDefault();
-        chooseWithoutSound();
-      });
-    }
-
     if (playBtn) {
       playBtn.addEventListener("click", () => {
         togglePlay();
@@ -688,18 +623,6 @@
     window.addEventListener("keydown", (event) => {
       // Don't intercept if user is typing in an input
       if (["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
-
-      if (!hasChosenSound) {
-        if (event.code === "Enter" || event.code === "Space") {
-          event.preventDefault();
-          chooseWithSound();
-          return;
-        } else if (event.key === "m" || event.key === "M") {
-          event.preventDefault();
-          chooseWithoutSound();
-          return;
-        }
-      }
 
       if (event.code === "Space") {
         event.preventDefault();
@@ -790,9 +713,6 @@
   window.addEventListener(
     "wheel",
     () => {
-      if (!hasChosenSound) {
-        chooseWithoutSound();
-      }
       pauseAutoPlay();
       lastWheelTime = performance.now();
       scheduleResumeAutoPlay();
@@ -803,9 +723,6 @@
   window.addEventListener(
     "touchmove",
     () => {
-      if (!hasChosenSound) {
-        chooseWithoutSound();
-      }
       pauseAutoPlay();
       lastWheelTime = performance.now();
       scheduleResumeAutoPlay();
