@@ -132,7 +132,7 @@
      Frame source + ultra-fast parallel preload (ImageBitmap)
      ------------------------------------------------------------ */
 
-  const FRAME_CACHE_TAG = "v=kush_v12";
+  const FRAME_CACHE_TAG = "v=kush_v13";
 
   function frameSrc(index) {
     return `frames/frame-${String(index + 1).padStart(4, "0")}.webp?${FRAME_CACHE_TAG}`;
