@@ -245,6 +245,9 @@
     ready = true;
     requestAnimationFrame(tick);
 
+    // Attempt to start audio immediately when showreel unlocks
+    tryPlayAudio();
+
     // Auto-play intro from the very start to the very end
     window.setTimeout(() => {
       if (!isAutoPlaying && !hasNavigated && !userPaused) {
@@ -390,6 +393,19 @@
      Audio & Auto-play engine
      ------------------------------------------------------------ */
 
+  function tryPlayAudio() {
+    if (!isSoundEnabled || !bgAudio || userPaused) return;
+    if (current < 1) {
+      bgAudio.currentTime = 0;
+    } else if (bgAudio.duration && Math.abs(bgAudio.currentTime - (current / (FRAME_COUNT - 1)) * bgAudio.duration) > 0.5) {
+      bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
+    }
+    const p = bgAudio.play();
+    if (p && p.catch) {
+      p.catch(() => {});
+    }
+  }
+
   function toggleSound() {
     isSoundEnabled = !isSoundEnabled;
     if (soundBtn) soundBtn.classList.toggle("is-active", isSoundEnabled);
@@ -397,24 +413,25 @@
     if (soundIcon) soundIcon.textContent = isSoundEnabled ? "🔊" : "🔇";
 
     if (isSoundEnabled) {
-      if (bgAudio.duration) {
-        bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
-      }
-      if (isAutoPlaying) {
+      if (bgAudio) {
+        if (bgAudio.duration && current > 0) {
+          bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
+        }
         bgAudio.play().catch(() => {});
       }
     } else {
-      bgAudio.pause();
+      if (bgAudio) bgAudio.pause();
     }
   }
 
   function togglePlay() {
     if (isAutoPlaying) {
       userPaused = true;
-      pauseAutoPlay();
+      pauseAutoPlay(true);
     } else {
       userPaused = false;
       startAutoPlay();
+      tryPlayAudio();
     }
   }
 
@@ -438,38 +455,11 @@
     if (playIcon) playIcon.textContent = "⏸";
     if (cueLabel) cueLabel.textContent = "Intro Playing";
 
-    if (isSoundEnabled && bgAudio) {
-      if (current < 1) {
-        bgAudio.currentTime = 0;
-      } else if (bgAudio.duration) {
-        bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
-      }
-      const playPromise = bgAudio.play();
-      if (playPromise && playPromise.catch) {
-        playPromise.catch(() => {
-          const unlock = () => {
-            if (isSoundEnabled && isAutoPlaying && bgAudio) {
-              if (current < 1) bgAudio.currentTime = 0;
-              else if (bgAudio.duration) bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
-              bgAudio.play().catch(() => {});
-            }
-            window.removeEventListener("pointerdown", unlock, true);
-            window.removeEventListener("touchstart", unlock, true);
-            window.removeEventListener("wheel", unlock, true);
-            window.removeEventListener("keydown", unlock, true);
-          };
-          window.addEventListener("pointerdown", unlock, true);
-          window.addEventListener("touchstart", unlock, true);
-          window.addEventListener("wheel", unlock, true);
-          window.addEventListener("keydown", unlock, true);
-        });
-      }
-    }
-
+    tryPlayAudio();
     autoPlayLastTime = performance.now();
   }
 
-  function pauseAutoPlay() {
+  function pauseAutoPlay(pauseSound = true) {
     if (!isAutoPlaying) return;
     isAutoPlaying = false;
     if (playBtn) {
@@ -479,16 +469,20 @@
     if (playLabel) playLabel.textContent = "Play";
     if (playIcon) playIcon.textContent = "▶";
     if (cueLabel && !hasNavigated) cueLabel.textContent = "Scroll to scrub";
-    if (bgAudio) bgAudio.pause();
+    if (pauseSound && bgAudio) bgAudio.pause();
   }
 
   function syncAudioScrub(index) {
-    if (!isSoundEnabled || isAutoPlaying || !bgAudio || !bgAudio.duration) return;
+    if (!isSoundEnabled || userPaused || !bgAudio || !bgAudio.duration) return;
+    if (bgAudio.paused) {
+      tryPlayAudio();
+      return;
+    }
     const now = performance.now();
-    if (now - lastAudioSyncTime < 100) return;
+    if (now - lastAudioSyncTime < 200) return;
     lastAudioSyncTime = now;
     const targetTime = (index / (FRAME_COUNT - 1)) * bgAudio.duration;
-    if (Math.abs(bgAudio.currentTime - targetTime) > 0.2) {
+    if (Math.abs(bgAudio.currentTime - targetTime) > 0.8) {
       bgAudio.currentTime = targetTime;
     }
   }
@@ -748,11 +742,24 @@
   initControls();
   initCursor();
 
-  // Any direct user interaction pauses auto-play so user has full manual control
+  // Persistent audio unlock on first user gesture (satisfies all browser autoplay policies)
+  const unlockAudio = () => {
+    if (isSoundEnabled && !userPaused && bgAudio && bgAudio.paused) {
+      tryPlayAudio();
+    }
+  };
+
+  window.addEventListener("pointerdown", unlockAudio, { passive: true });
+  window.addEventListener("touchstart", unlockAudio, { passive: true });
+  window.addEventListener("wheel", unlockAudio, { passive: true });
+  window.addEventListener("keydown", unlockAudio, { passive: true });
+
+  // Direct user scrolling pauses visual auto-scroll for manual control,
+  // while keeping the soundtrack playing smoothly without interruption!
   window.addEventListener(
     "wheel",
     () => {
-      if (isAutoPlaying) pauseAutoPlay();
+      if (isAutoPlaying) pauseAutoPlay(false);
       readScroll();
     },
     { passive: true }
@@ -761,7 +768,7 @@
   window.addEventListener(
     "touchmove",
     () => {
-      if (isAutoPlaying) pauseAutoPlay();
+      if (isAutoPlaying) pauseAutoPlay(false);
       readScroll();
     },
     { passive: true }
@@ -775,7 +782,7 @@
         return;
       }
       if (isAutoPlaying) {
-        pauseAutoPlay();
+        pauseAutoPlay(false);
       }
       readScroll();
     },
@@ -799,4 +806,5 @@
   resize();
   readScroll();
   loadFrames();
+  tryPlayAudio();
 })();
