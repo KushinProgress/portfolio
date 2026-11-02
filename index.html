@@ -14,31 +14,45 @@
   <meta property="og:type" content="website" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preload" as="image" href="frames/frame-0001.webp?v=kush_v12" />
-  <link rel="stylesheet" href="styles.css?v=kush_v12" />
+  <link rel="stylesheet" href="styles.css?v=kush_v17" />
 </head>
 <body class="is-loading">
-  <div class="loader" id="loader" role="status" aria-live="polite">
-    <div class="loader-top">
+  <div class="sound-gate" id="soundGate" role="dialog" aria-modal="true" aria-labelledby="soundGateTitle">
+    <div class="sound-gate__top">
       <span>Kush Gangwar</span>
       <span>Portfolio / 2025</span>
     </div>
 
-    <div class="loader-center">
-      <svg class="loader-mark" viewBox="0 0 100 100" aria-hidden="true">
+    <div class="sound-gate__center">
+      <svg class="sound-gate__mark" viewBox="0 0 100 100" aria-hidden="true">
         <g fill="none" stroke="currentColor" stroke-width="8.5" stroke-linecap="round">
           <line x1="50" y1="13" x2="50" y2="87" />
           <line x1="50" y1="13" x2="50" y2="87" transform="rotate(60 50 50)" />
           <line x1="50" y1="13" x2="50" y2="87" transform="rotate(120 50 50)" />
         </g>
       </svg>
-      <p class="loader-title">A portfolio<br /><span>in 496 frames</span></p>
+      <div class="sound-gate__text">
+        <h1 class="sound-gate__title" id="soundGateTitle">A portfolio<br /><span>in 496 frames</span></h1>
+        <p class="sound-gate__desc">Experience with sound for the full cinematic soundtrack, or continue muted.</p>
+      </div>
+
+      <div class="sound-gate__actions">
+        <button type="button" class="sound-gate__btn sound-gate__btn--sound" id="btnWithSound" aria-label="Continue with sound">
+          <span class="btn-sound-icon" aria-hidden="true">🔊</span>
+          <span class="btn-sound-label">Continue with sound</span>
+        </button>
+        <button type="button" class="sound-gate__btn sound-gate__btn--mute" id="btnWithoutSound" aria-label="Continue without sound">
+          <span class="btn-sound-icon" aria-hidden="true">🔇</span>
+          <span class="btn-sound-label">Continue without sound</span>
+        </button>
+      </div>
     </div>
 
-    <div class="loader-bottom">
-      <span class="loader-status" id="loaderStatus">Loading frames</span>
-      <span class="loader-pct" id="loaderPct">0%</span>
+    <div class="sound-gate__bottom">
+      <span class="sound-gate__status" id="soundGateStatus">Buffering frames</span>
+      <span class="sound-gate__pct" id="soundGatePct">0%</span>
     </div>
-    <div class="loader-bar" aria-hidden="true"><span id="loaderBar"></span></div>
+    <div class="sound-gate__bar" aria-hidden="true"><span id="soundGateBar"></span></div>
   </div>
 
   <canvas id="frameCanvas" aria-hidden="true"></canvas>
@@ -121,6 +135,6 @@
     <div class="noscript">This portfolio needs JavaScript to play its 496 frames.</div>
   </noscript>
 
-  <script src="main.js?v=kush_v15"></script>
+  <script src="main.js?v=kush_v17"></script>
 </body>
 </html>
