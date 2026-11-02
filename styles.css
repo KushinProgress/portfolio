@@ -197,13 +197,14 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  pointer-events: auto;
 }
 
 .ctrl-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 13px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
@@ -214,7 +215,11 @@ button {
   text-transform: uppercase;
   cursor: pointer;
   outline: none;
-  transition: all 0.25s var(--ease);
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: all 0.2s var(--ease);
 }
 
 .ctrl-btn:hover,
@@ -222,6 +227,11 @@ button {
   border-color: #fff;
   background: rgba(255, 255, 255, 0.22);
   transform: translateY(-1px);
+}
+
+.ctrl-btn:active {
+  transform: translateY(0);
+  opacity: 0.85;
 }
 
 .ctrl-btn.is-active {

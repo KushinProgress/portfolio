@@ -97,32 +97,21 @@
   let endCtaVisible = false;
 
   let isAutoPlaying = false;
+  let userPaused = false;
   let isSoundEnabled = true;
-  let lastProgrammaticScrollTime = 0;
+  let isProgrammaticScroll = false;
   let autoPlayLastTime = 0;
-  let lastWheelTime = 0;
+  let lastAudioSyncTime = 0;
 
   let dpr = 1;
   let layout = { scale: 1, dw: 0, dh: 0, ox: 0, oy: 0 };
 
   let hasNavigated = false;
-  let resumeAutoPlayTimer = null;
-
-  function scheduleResumeAutoPlay() {
-    if (hasNavigated) return;
-    window.clearTimeout(resumeAutoPlayTimer);
-    resumeAutoPlayTimer = window.setTimeout(() => {
-      if (!isAutoPlaying && current < FRAME_COUNT - 2 && !hasNavigated) {
-        startAutoPlay();
-      }
-    }, 2000);
-  }
 
   function goToTechStack() {
     if (hasNavigated) return;
     hasNavigated = true;
     pauseAutoPlay();
-    window.clearTimeout(resumeAutoPlayTimer);
 
     if (cueLabel) cueLabel.textContent = "Entering Portfolio...";
     document.body.classList.add("is-exiting");
@@ -258,7 +247,7 @@
 
     // Auto-play intro from the very start to the very end
     window.setTimeout(() => {
-      if (!isAutoPlaying && !hasNavigated) {
+      if (!isAutoPlaying && !hasNavigated && !userPaused) {
         startAutoPlay();
       }
     }, 350);
@@ -377,7 +366,7 @@
 
   function scrollToFrame(frame, smooth = true) {
     const y = (frame / (FRAME_COUNT - 1)) * maxScroll();
-    lastProgrammaticScrollTime = performance.now();
+    isProgrammaticScroll = true;
     window.scrollTo({
       top: y,
       behavior: smooth && !reduceMotion ? "smooth" : "auto",
@@ -421,23 +410,30 @@
 
   function togglePlay() {
     if (isAutoPlaying) {
-      window.clearTimeout(resumeAutoPlayTimer);
+      userPaused = true;
       pauseAutoPlay();
     } else {
+      userPaused = false;
       startAutoPlay();
     }
   }
 
   function startAutoPlay() {
-    // If at the end, restart from beginning
+    if (hasNavigated) return;
+    userPaused = false;
+
+    // If at or near the end, restart from beginning
     if (current >= FRAME_COUNT - 2) {
-      scrollToFrame(0, false);
       current = 0;
       target = 0;
+      scrollToFrame(0, false);
     }
 
     isAutoPlaying = true;
-    if (playBtn) playBtn.classList.add("is-active");
+    if (playBtn) {
+      playBtn.classList.add("is-active");
+      playBtn.setAttribute("aria-label", "Pause showreel");
+    }
     if (playLabel) playLabel.textContent = "Pause";
     if (playIcon) playIcon.textContent = "⏸";
     if (cueLabel) cueLabel.textContent = "Intro Playing";
@@ -452,7 +448,7 @@
       if (playPromise && playPromise.catch) {
         playPromise.catch(() => {
           const unlock = () => {
-            if (isSoundEnabled && bgAudio) {
+            if (isSoundEnabled && isAutoPlaying && bgAudio) {
               if (current < 1) bgAudio.currentTime = 0;
               else if (bgAudio.duration) bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
               bgAudio.play().catch(() => {});
@@ -476,17 +472,23 @@
   function pauseAutoPlay() {
     if (!isAutoPlaying) return;
     isAutoPlaying = false;
-    if (playBtn) playBtn.classList.remove("is-active");
+    if (playBtn) {
+      playBtn.classList.remove("is-active");
+      playBtn.setAttribute("aria-label", "Play showreel");
+    }
     if (playLabel) playLabel.textContent = "Play";
     if (playIcon) playIcon.textContent = "▶";
     if (cueLabel && !hasNavigated) cueLabel.textContent = "Scroll to scrub";
-    bgAudio.pause();
+    if (bgAudio) bgAudio.pause();
   }
 
   function syncAudioScrub(index) {
-    if (!isSoundEnabled || isAutoPlaying || !bgAudio.duration) return;
+    if (!isSoundEnabled || isAutoPlaying || !bgAudio || !bgAudio.duration) return;
+    const now = performance.now();
+    if (now - lastAudioSyncTime < 100) return;
+    lastAudioSyncTime = now;
     const targetTime = (index / (FRAME_COUNT - 1)) * bgAudio.duration;
-    if (Math.abs(bgAudio.currentTime - targetTime) > 0.3) {
+    if (Math.abs(bgAudio.currentTime - targetTime) > 0.2) {
       bgAudio.currentTime = targetTime;
     }
   }
@@ -535,7 +537,7 @@
 
     // Handle auto-play timing
     if (isAutoPlaying) {
-      const delta = (timestamp - autoPlayLastTime) / 1000;
+      const delta = Math.min(0.1, (timestamp - autoPlayLastTime) / 1000);
       autoPlayLastTime = timestamp;
 
       // Calculate effective FPS (increased delay for IEEE Hack Synapse segment only)
@@ -550,7 +552,7 @@
 
       const max = maxScroll();
       if (max > 0) {
-        lastProgrammaticScrollTime = performance.now();
+        isProgrammaticScroll = true;
         window.scrollTo(0, (target / (FRAME_COUNT - 1)) * max);
       }
 
@@ -564,24 +566,19 @@
       }
     }
 
-    // Adaptive easing:
-    // When user scrolls via two-finger trackpad or wheel, respond with high responsiveness (0.85)
-    // so the video frame is directly in lockstep with the fingers (0ms perceived latency).
-    // When idle / keyboard / auto-play, use smooth glide.
-    const isWheelScrolling = performance.now() - lastWheelTime < 180;
+    // Adaptive easing for ultra-smooth scrolling:
+    // 0.12 gives a butter-smooth, cinematic inertia on trackpads and mouse wheels
     let ease;
     if (reduceMotion) {
       ease = 1.0;
     } else if (isAutoPlaying) {
       ease = 0.35;
-    } else if (isWheelScrolling) {
-      ease = 0.65;
     } else {
-      ease = 0.40;
+      ease = 0.12; // Silky smooth damping for manual scroll / wheel / trackpad
     }
 
     current += (target - current) * ease;
-    if (Math.abs(target - current) < 0.04) current = target;
+    if (Math.abs(target - current) < 0.02) current = target;
 
     const index = Math.max(
       0,
@@ -630,13 +627,28 @@
 
   function initControls() {
     if (playBtn) {
-      playBtn.addEventListener("click", () => {
+      const handlePlay = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         togglePlay();
+      };
+      playBtn.addEventListener("click", handlePlay);
+      playBtn.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
       });
     }
     if (soundBtn) {
-      soundBtn.addEventListener("click", () => {
+      soundBtn.addEventListener("click", (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         toggleSound();
+      });
+      soundBtn.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
       });
     }
     if (skipBtn) {
@@ -736,13 +748,12 @@
   initControls();
   initCursor();
 
-  // Any direct user interaction pauses auto-play and marks active user trackpad/wheel scrub
+  // Any direct user interaction pauses auto-play so user has full manual control
   window.addEventListener(
     "wheel",
     () => {
-      pauseAutoPlay();
-      lastWheelTime = performance.now();
-      scheduleResumeAutoPlay();
+      if (isAutoPlaying) pauseAutoPlay();
+      readScroll();
     },
     { passive: true }
   );
@@ -750,9 +761,8 @@
   window.addEventListener(
     "touchmove",
     () => {
-      pauseAutoPlay();
-      lastWheelTime = performance.now();
-      scheduleResumeAutoPlay();
+      if (isAutoPlaying) pauseAutoPlay();
+      readScroll();
     },
     { passive: true }
   );
@@ -760,13 +770,12 @@
   window.addEventListener(
     "scroll",
     () => {
-      const isManual = performance.now() - lastProgrammaticScrollTime > 120;
-      if (isAutoPlaying && isManual) {
-        pauseAutoPlay();
-        scheduleResumeAutoPlay();
+      if (isProgrammaticScroll) {
+        isProgrammaticScroll = false;
+        return;
       }
-      if (isManual) {
-        lastWheelTime = performance.now();
+      if (isAutoPlaying) {
+        pauseAutoPlay();
       }
       readScroll();
     },
