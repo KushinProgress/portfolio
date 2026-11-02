@@ -1,0 +1,17 @@
+# Virtual Environment & Python cache
+.venv/
+__pycache__/
+*.pyc
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Backup and temp files
+frames_backup/
+tech-stack.backup.html
+final_viewport_center.png
+screenshot_kush_final.png
+
+# Large zip archives (source files are tracked directly in repo)
+*.zip

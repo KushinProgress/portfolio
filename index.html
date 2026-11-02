@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Kush Gangwar — All Rounder</title>
+  <meta name="description" content="A smooth scroll-driven portfolio in 496 frames. Scroll to scrub or hit play." />
+  <meta name="theme-color" content="#fbfbf9" />
+  <meta property="og:title" content="Kush Gangwar — All Rounder" />
+  <meta property="og:description" content="A smooth scroll-driven portfolio in 496 frames." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preload" as="image" href="frames/frame-0001.webp?v=kush_v12" />
+  <link rel="stylesheet" href="styles.css?v=kush_v12" />
+</head>
+<body class="is-loading">
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader-top">
+      <span>Kush Gangwar</span>
+      <span>Portfolio / 2025</span>
+    </div>
+
+    <div class="loader-center">
+      <svg class="loader-mark" viewBox="0 0 100 100" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="8.5" stroke-linecap="round">
+          <line x1="50" y1="13" x2="50" y2="87" />
+          <line x1="50" y1="13" x2="50" y2="87" transform="rotate(60 50 50)" />
+          <line x1="50" y1="13" x2="50" y2="87" transform="rotate(120 50 50)" />
+        </g>
+      </svg>
+      <p class="loader-title">A portfolio<br /><span>in 496 frames</span></p>
+    </div>
+
+    <div class="loader-bottom">
+      <span class="loader-status" id="loaderStatus">Loading frames</span>
+      <span class="loader-pct" id="loaderPct">0%</span>
+    </div>
+    <div class="loader-bar" aria-hidden="true"><span id="loaderBar"></span></div>
+  </div>
+
+  <canvas id="frameCanvas" aria-hidden="true"></canvas>
+
+  <header class="topbar chrome">
+    <a class="brand" href="#top" data-scroll-top aria-label="Kush Gangwar, all rounder — back to top">
+      <span class="brand-mark" aria-hidden="true">✳</span>
+      <span class="brand-text">Kush Gangwar<em>All Rounder</em></span>
+    </a>
+    <div class="top-right">
+      <div class="controls-row">
+        <button type="button" class="ctrl-btn" id="playBtn" aria-label="Toggle auto play preview">
+          <span class="ctrl-icon" id="playIcon" aria-hidden="true">▶</span>
+          <span class="ctrl-text" id="playLabel">Play</span>
+        </button>
+        <button type="button" class="ctrl-btn" id="soundBtn" aria-label="Toggle sound">
+          <span class="ctrl-icon" id="soundIcon" aria-hidden="true">🔇</span>
+          <span class="ctrl-text" id="soundLabel">Sound</span>
+        </button>
+      </div>
+      <span class="status"><i aria-hidden="true"></i>Available for work</span>
+      <a class="email" href="mailto:kush321a@gmail.com">Contact</a>
+    </div>
+  </header>
+
+  <nav class="rail chrome" aria-label="Sections">
+    <button type="button" data-frame="0"><span class="rail-label">Intro</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="120"><span class="rail-label">Achievements</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="156"><span class="rail-label">IEEE Hack Synapse</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="192"><span class="rail-label">Motion Graphic</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="240"><span class="rail-label">BITSoM Hackathon</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="276"><span class="rail-label">NSUT Product Paradox</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="336"><span class="rail-label">Jugg / Vibe</span><i aria-hidden="true"></i></button>
+    <button type="button" data-frame="432"><span class="rail-label">Outro</span><i aria-hidden="true"></i></button>
+  </nav>
+
+  <footer class="hud chrome">
+    <div class="cue" id="cue">
+      <span class="cue-label" id="cueLabel">Intro Playing</span>
+      <span class="cue-line" aria-hidden="true"><i></i></span>
+    </div>
+    <div class="keys-help" id="keysHelp" aria-hidden="true">
+      <span><kbd>Space</kbd> Pause</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> Scrub</span>
+      <span><kbd>Esc</kbd> Skip</span>
+    </div>
+    <div class="hud-right">
+      <button type="button" class="skip-btn" id="skipBtn" aria-label="Skip intro to tech stack">
+        <span>Skip</span>
+        <span class="skip-arrow" aria-hidden="true">→</span>
+      </button>
+      <div class="frame-count" aria-label="Frame counter">
+        <span id="frameNow">001</span><span class="slash">/</span><span>496</span>
+      </div>
+    </div>
+  </footer>
+
+  <a class="end-cta" id="endCta" href="mailto:kush321a@gmail.com">
+    Start a project <span aria-hidden="true">↗</span>
+  </a>
+
+  <div class="progress chrome" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <div class="cursor" id="cursor" aria-hidden="true">
+    <span class="cursor-ring" id="cursorRing"></span>
+    <span class="cursor-dot" id="cursorDot"></span>
+  </div>
+
+  <audio id="bgAudio" src="audio.mp3" preload="auto" playsinline></audio>
+
+  <main id="top" class="scroll-track" style="--frames: 496; --step: 22px">
+    <h1 class="sr-only">Kush — All Rounder</h1>
+    <p class="sr-only">
+      A scroll-driven portfolio. Scroll down to move through the work, from IEEE Hack Synapse edits
+      to motion graphics and vibe edits.
+    </p>
+  </main>
+
+  <noscript>
+    <div class="noscript">This portfolio needs JavaScript to play its 496 frames.</div>
+  </noscript>
+
+  <script src="main.js?v=kush_v15"></script>
+</body>
+</html>
