@@ -54,8 +54,8 @@
           <span class="ctrl-icon" id="playIcon" aria-hidden="true">▶</span>
           <span class="ctrl-text" id="playLabel">Play</span>
         </button>
-        <button type="button" class="ctrl-btn" id="soundBtn" aria-label="Toggle sound">
-          <span class="ctrl-icon" id="soundIcon" aria-hidden="true">🔇</span>
+        <button type="button" class="ctrl-btn is-active" id="soundBtn" aria-label="Toggle sound">
+          <span class="ctrl-icon" id="soundIcon" aria-hidden="true">🔊</span>
           <span class="ctrl-text" id="soundLabel">Sound</span>
         </button>
       </div>
@@ -107,7 +107,7 @@
     <span class="cursor-dot" id="cursorDot"></span>
   </div>
 
-  <audio id="bgAudio" src="audio.mp3" preload="auto" playsinline></audio>
+  <audio id="bgAudio" src="audio.mp3" preload="auto" playsinline autoplay></audio>
 
   <main id="top" class="scroll-track" style="--frames: 496; --step: 22px">
     <h1 class="sr-only">Kush — All Rounder</h1>

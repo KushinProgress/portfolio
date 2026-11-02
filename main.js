@@ -6,6 +6,11 @@
 (() => {
   "use strict";
 
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+  window.scrollTo(0, 0);
+
   /* ============================================================
      CONFIG: TECH STACK DESTINATION
      ------------------------------------------------------------
@@ -92,7 +97,7 @@
   let endCtaVisible = false;
 
   let isAutoPlaying = false;
-  let isSoundEnabled = false;
+  let isSoundEnabled = true;
   let lastProgrammaticScrollTime = 0;
   let autoPlayLastTime = 0;
   let lastWheelTime = 0;
@@ -236,8 +241,9 @@
       const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
       window.scrollTo(0, (idx / (TOTAL_FRAMES - 1)) * scrollMax);
     } else {
-      readScroll();
-      current = target;
+      window.scrollTo(0, 0);
+      current = 0;
+      target = 0;
     }
     drawFrame(Math.round(current));
     lastDrawn = Math.round(current);
@@ -436,11 +442,32 @@
     if (playIcon) playIcon.textContent = "⏸";
     if (cueLabel) cueLabel.textContent = "Intro Playing";
 
-    if (isSoundEnabled) {
-      if (bgAudio.duration) {
+    if (isSoundEnabled && bgAudio) {
+      if (current < 1) {
+        bgAudio.currentTime = 0;
+      } else if (bgAudio.duration) {
         bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
       }
-      bgAudio.play().catch(() => {});
+      const playPromise = bgAudio.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(() => {
+          const unlock = () => {
+            if (isSoundEnabled && bgAudio) {
+              if (current < 1) bgAudio.currentTime = 0;
+              else if (bgAudio.duration) bgAudio.currentTime = (current / (FRAME_COUNT - 1)) * bgAudio.duration;
+              bgAudio.play().catch(() => {});
+            }
+            window.removeEventListener("pointerdown", unlock, true);
+            window.removeEventListener("touchstart", unlock, true);
+            window.removeEventListener("wheel", unlock, true);
+            window.removeEventListener("keydown", unlock, true);
+          };
+          window.addEventListener("pointerdown", unlock, true);
+          window.addEventListener("touchstart", unlock, true);
+          window.addEventListener("wheel", unlock, true);
+          window.addEventListener("keydown", unlock, true);
+        });
+      }
     }
 
     autoPlayLastTime = performance.now();
